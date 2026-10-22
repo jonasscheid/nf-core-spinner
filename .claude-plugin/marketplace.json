@@ -1,0 +1,13 @@
+{
+  "name": "nf-core-spinner",
+  "description": "Animated nf-core logo for the Claude Code working indicator",
+  "owner": {
+    "name": "Jonas Scheid"
+  },
+  "plugins": [
+    {
+      "name": "nf-core-spinner",
+      "source": "./"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "nf-core-spinner",
+  "version": "0.1.0",
+  "description": "Replaces the Claude working mark with an animated nf-core apple core once a prompt mentions nf-core",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Jonas Scheid"
+  }
+}
