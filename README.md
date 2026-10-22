@@ -4,22 +4,10 @@ A Claude Code plugin that replaces the Claude working mark with an animated nf-c
 
 ## Preview
 
-Claude desktop app and VS Code:
-
 ![Animated nf-core logo in the app](assets/preview-app.svg)
 
-Terminal:
-
-![Pixel-art nf-core logo in the terminal](assets/preview-terminal.gif)
-
-Each kind of work has its own motion:
-
-| Claude is | Motion |
-| --- | --- |
-| Thinking | Rock |
-| Writing a reply | Flip |
-| Waiting for the model | Pulse |
-| Running a tool | Hop |
+The plugin has four motions: rock, flip, pulse and hop.
+Each prompt takes the next motion and keeps it for the whole response.
 
 The logo appears after the first prompt in a session that mentions nf-core.
 Before that, Claude Code shows its own mark.
@@ -43,7 +31,7 @@ A plugin installed at the user scope also loads in the Code tab of the Claude de
 
 ## Notes
 
-- The terminal version needs a terminal with true color.
+- The logo shows in the Claude desktop app and in VS Code. The terminal keeps its own spinner.
 - The working row no longer shows the elapsed time and the token count.
 
 ## Credits

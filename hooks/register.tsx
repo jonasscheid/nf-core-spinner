@@ -1,19 +1,12 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
+import type { MotionIndex } from '../types'
 import { CORE, STALK } from './logo'
-import { frameCells, ROWS, WIDTH, type Mode } from './pixels'
 
 const TRIGGER = /nf-?core/i
 const isActive = atom({ plugin: 'nf-core-spinner', key: 'isActive' } as const, false)
-
-const TICK_MS = 150
-const RASTER_KEY = 'nf-core'
-
-type Animation = { mode: Mode; tick: number; misses: number }
-// A row that refuses this many blits in a row is gone, so its timer stops.
-const MAX_MISSES = 20
-const animations = new Map<string, Animation>()
+const motionIndex = atom({ plugin: 'nf-core-spinner', key: 'motionIndex' } as const, 0 as MotionIndex)
 
 const NF_GREEN = '#22ae63'
 const BASE = '141 275'
@@ -40,80 +33,42 @@ const flip = (content: string) =>
 const pulse = (content: string) =>
   scaleAbout(CENTER_X, CENTER_Y, animate('scale', '1;1.12;1;1.07;1;1', '0.83s', 'keyTimes="0;.15;.3;.45;.6;1"'), content)
 
-const MOTIONS: Record<Mode, (content: string) => string> = {
-  thinking: rock,
-  responding: flip,
-  requesting: pulse,
-  'tool-input': hop,
-  'tool-use': hop,
-}
+// Each prompt takes the next motion and keeps it for the whole response.
+const MOTIONS = [rock, flip, pulse, hop] as const
 
 const stalkMotion = animate('rotate', `-10 ${STALK_BASE};10 ${STALK_BASE};-10 ${STALK_BASE}`, '0.92s')
 
-const nfCoreSvg = (mode: Mode) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-23 -30 330 330" width="64" height="64">` +
-  `${MOTIONS[mode](`${CORE}<g>${stalkMotion}${STALK}</g>`)}</svg>`
+const nfCoreSvg = (index: MotionIndex) => {
+  const motion = MOTIONS[index % MOTIONS.length] ?? rock
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-23 -30 330 330" width="64" height="64">` +
+    `${motion(`${CORE}<g>${stalkMotion}${STALK}</g>`)}</svg>`
+  )
+}
 
 export const register: Register = on => {
   on('prompt.submit', async ($, e, next) => {
     if (TRIGGER.test(e.text) && !(await read($, isActive))) {
       await update($, isActive, () => true)
     }
+    await update($, motionIndex, i => (i + 1) % MOTIONS.length)
 
     return next(e)
   })
 
   on('ui.render', { component: 'Spinner' }, async ($, e, next) => {
-    if (!(await read($, isActive))) {
+    if (e.surface === 'terminal' || !(await read($, isActive))) {
       return next(e)
     }
 
-    const label = e.props.message ?? e.props.word
-
-    if (e.surface === 'terminal') {
-      const { requestId } = e
-      const running = animations.get(requestId)
-      const animation: Animation = running ?? { mode: e.props.mode, tick: 0, misses: 0 }
-      animation.mode = e.props.mode
-
-      if (!running) {
-        const timer = $.clock.every(TICK_MS, async () => {
-          animation.tick = animation.tick + 1
-          const cells = frameCells(animation.mode, animation.tick)
-          const result = await $.ui.blit({ requestId, key: RASTER_KEY, cells })
-          animation.misses = 'deny' in result && result.deny ? animation.misses + 1 : 0
-          if (animation.misses >= MAX_MISSES) {
-            timer.cancel()
-            animations.delete(requestId)
-          }
-        })
-        animations.set(requestId, animation)
-      }
-
-      const { Box, Raster, Text } = $.ui.resolve(e)
-
-      return (
-        <Box flexDirection="row" alignItems="center" gap={1}>
-          <Raster
-            key={RASTER_KEY}
-            columns={WIDTH}
-            rows={ROWS}
-            cells={frameCells(animation.mode, animation.tick)}
-          />
-          <Text color={NF_GREEN}>
-            {label}
-            {e.props.suffix}
-          </Text>
-        </Box>
-      )
-    }
-
     const { Box, Svg, Text } = $.ui.resolve(e)
+    const label = e.props.message ?? e.props.word
 
     return (
       <Box flexDirection="row" alignItems="center" gap={1}>
         <Svg
-          source={nfCoreSvg(e.props.mode)}
+          source={nfCoreSvg(await read($, motionIndex))}
           alt="nf-core logo"
           width={20}
           height={20}

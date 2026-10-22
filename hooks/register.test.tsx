@@ -29,30 +29,38 @@ test('the working row shows the nf-core logo on remote surfaces', async ($, on) 
   }
 })
 
-test('each kind of work has its own motion', async ($, on) => {
+const motionOf = async ($: Env[0], mode: 'thinking' | 'responding' | 'requesting' | 'tool-use') => {
+  const ui = await $.ui.mount({ ...SPINNER, surface: 'desktop', props: { ...SPINNER.props, mode } })
+  const source = String((await ui.find({ type: 'Svg' }))?.props.source)
+  await ui.unmount()
+
+  return source.match(/type="(\w+)" values="([^"]+)"/)?.slice(1).join(' ')
+}
+
+test('one response keeps one motion, the next prompt takes another', async ($, on) => {
   engine([$, on])
   await submit($, 'Run nf-core/mhcquant on this sample')
-  const motions = new Set<string>()
 
-  for (const mode of ['thinking', 'responding', 'requesting', 'tool-use'] as const) {
-    const ui = await $.ui.mount({ ...SPINNER, surface: 'desktop', props: { ...SPINNER.props, mode } })
-
-    const source = String((await ui.find({ type: 'Svg' }))?.props.source)
-    motions.add(source.match(/type="(\w+)" values="([^"]+)"/)?.slice(1).join(' ') ?? '')
-    await ui.unmount()
+  const first = await motionOf($, 'thinking')
+  for (const mode of ['responding', 'requesting', 'tool-use'] as const) {
+    expect(await motionOf($, mode)).toBe(first)
   }
 
-  expect(motions.size).toBe(4)
+  await submit($, 'And now nf-core/epitopeprediction')
+  expect(await motionOf($, 'thinking')).not.toBe(first)
 })
 
-test('the terminal shows a pixel-art apple core', async ($, on) => {
+test('the terminal keeps its own spinner', async ($, on) => {
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+
+    return <Text>engine</Text>
+  })
   engine([$, on])
   await submit($, 'Run nf-core/mhcquant on this sample')
-  const ui = await $.ui.mount({ ...SPINNER, surface: 'terminal' })
 
-  const raster = await ui.find({ type: 'Raster', key: 'nf-core' })
-  expect(raster?.props.columns).toBe(10)
-  expect((await ui.find({ type: 'Text', text: /Working/ }))?.text).toBe('Working…')
+  const ui = await $.ui.mount({ ...SPINNER, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /engine/ }))?.text).toBe('engine')
   await ui.unmount()
 })
 
