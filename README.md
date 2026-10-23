@@ -9,7 +9,7 @@ A Claude Code plugin that replaces the Claude working mark with an animated nf-c
 The plugin has five motions: rock, flip, pulse, hop and scroll.
 Each prompt takes a random motion, never the one before, and keeps it for the whole response.
 
-The logo appears from the first prompt in an nf-core repository (a folder with `.nf-core.yml` at or above the project root).
+The logo appears from the start of a session in an nf-core repository (a folder with `.nf-core.yml` at or above the project root).
 Elsewhere, it appears after the first prompt that mentions nf-core.
 Before that, Claude Code shows its own mark.
 

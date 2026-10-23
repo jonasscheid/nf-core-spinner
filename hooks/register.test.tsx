@@ -12,6 +12,7 @@ type Env = Parameters<TestBody>
 
 // Stands for the engine beneath the plugin; registered before the test first calls `$`.
 const engine = ([, on]: Env, files: string[] = []) => {
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.root', () => ({ value: '/work/repo/sub' }))
   on('fs.exists', (_, e) => ({ value: files.includes(e.path) }))
   on('prompt.submit', (_, e) => ({ text: e.text }))
@@ -92,6 +93,15 @@ test('the engine mark stays until a prompt mentions nf-core', async ($, on) => {
 test('an nf-core repo shows the logo without a prompt naming nf-core', async ($, on) => {
   engine([$, on], ['/work/repo/.nf-core.yml'])
   await submit($, 'Fix the typo in the README')
+
+  const ui = await $.ui.mount({ ...SPINNER, surface: 'desktop' })
+  expect((await ui.find({ type: 'Svg' }))?.props.alt).toBe('nf-core logo')
+  await ui.unmount()
+})
+
+test('an nf-core repo shows the logo from the session start, before any prompt', async ($, on) => {
+  engine([$, on], ['/work/repo/.nf-core.yml'])
+  await $.session.start({ cwd: '/work/repo/sub', surface: 'desktop', isInteractive: true })
 
   const ui = await $.ui.mount({ ...SPINNER, surface: 'desktop' })
   expect((await ui.find({ type: 'Svg' }))?.props.alt).toBe('nf-core logo')

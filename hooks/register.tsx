@@ -69,6 +69,15 @@ const isInNfCoreRepo = async ($: Parameters<Hook<'prompt.submit'>>[0]) => {
 }
 
 export const register: Register = on => {
+  // Checked before the first prompt, so its working row already shows the logo.
+  on('session.start', async ($, e, next) => {
+    if (await isInNfCoreRepo($)) {
+      await update($, isActive, () => true)
+    }
+
+    return next(e)
+  })
+
   on('prompt.submit', async ($, e, next) => {
     if (!(await read($, isActive)) && (TRIGGER.test(e.text) || (await isInNfCoreRepo($)))) {
       await update($, isActive, () => true)
