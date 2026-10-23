@@ -93,7 +93,6 @@ export const register: Register = on => {
           alt="nf-core logo"
           width={20}
           height={20}
-          isInteractive
         />
         <Text color={NF_GREEN}>
           {label}
