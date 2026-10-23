@@ -39,7 +39,7 @@ const pulse = (content: string) =>
 const scroll = (content: string) =>
   `<g>${animate('translate', `0 0;${VIEW_WIDTH} 0`, '0.4s')}${content}<g transform="translate(${-VIEW_WIDTH} 0)">${content}</g></g>`
 
-// Each prompt takes the next motion and keeps it for the whole response.
+// Each prompt takes a random other motion and keeps it for the whole response.
 const MOTIONS = [rock, flip, pulse, hop, scroll] as const
 
 const stalkMotion = animate('rotate', `-10 ${STALK_BASE};10 ${STALK_BASE};-10 ${STALK_BASE}`, '0.92s')
@@ -73,7 +73,7 @@ export const register: Register = on => {
     if (!(await read($, isActive)) && (TRIGGER.test(e.text) || (await isInNfCoreRepo($)))) {
       await update($, isActive, () => true)
     }
-    await update($, motionIndex, i => (i + 1) % MOTIONS.length)
+    await update($, motionIndex, i => (i + 1 + Math.floor(Math.random() * (MOTIONS.length - 1))) % MOTIONS.length)
 
     return next(e)
   })
