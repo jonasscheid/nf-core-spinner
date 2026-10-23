@@ -13,6 +13,7 @@ const BASE = '141 275'
 const STALK_BASE = '150 75'
 const CENTER_X = 141.6
 const CENTER_Y = 160
+const VIEW_WIDTH = 330
 
 const animate = (type: string, values: string, dur: string, extra = '') =>
   `<animateTransform attributeName="transform" type="${type}" values="${values}" dur="${dur}" repeatCount="indefinite" ${extra}/>`
@@ -33,8 +34,12 @@ const flip = (content: string) =>
 const pulse = (content: string) =>
   scaleAbout(CENTER_X, CENTER_Y, animate('scale', '1;1.12;1;1.07;1;1', '0.83s', 'keyTimes="0;.15;.3;.45;.6;1"'), content)
 
+// The nf-core-scroll Slack emoji: the logo slides right and wraps in from the left.
+const scroll = (content: string) =>
+  `<g>${animate('translate', `0 0;${VIEW_WIDTH} 0`, '0.4s')}${content}<g transform="translate(${-VIEW_WIDTH} 0)">${content}</g></g>`
+
 // Each prompt takes the next motion and keeps it for the whole response.
-const MOTIONS = [rock, flip, pulse, hop] as const
+const MOTIONS = [rock, flip, pulse, hop, scroll] as const
 
 const stalkMotion = animate('rotate', `-10 ${STALK_BASE};10 ${STALK_BASE};-10 ${STALK_BASE}`, '0.92s')
 
@@ -42,7 +47,7 @@ const nfCoreSvg = (index: MotionIndex) => {
   const motion = MOTIONS[index % MOTIONS.length] ?? rock
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-23 -30 330 330" width="64" height="64">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-23 -30 ${VIEW_WIDTH} ${VIEW_WIDTH}" width="64" height="64">` +
     `${motion(`${CORE}<g>${stalkMotion}${STALK}</g>`)}</svg>`
   )
 }
