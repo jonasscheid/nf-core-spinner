@@ -1,10 +1,11 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { Hook, Register } from 'claude-code'
 
 import type { MotionIndex } from '../types'
 import { CORE, STALK } from './logo'
 
 const TRIGGER = /nf-?core/i
+const NF_CORE_CONFIG = '.nf-core.yml'
 const isActive = atom({ plugin: 'nf-core-spinner', key: 'isActive' } as const, false)
 const motionIndex = atom({ plugin: 'nf-core-spinner', key: 'motionIndex' } as const, 0 as MotionIndex)
 
@@ -52,9 +53,24 @@ const nfCoreSvg = (index: MotionIndex) => {
   )
 }
 
+// nf-core pipelines and the modules repo carry .nf-core.yml at their root.
+const isInNfCoreRepo = async ($: Parameters<Hook<'prompt.submit'>>[0]) => {
+  try {
+    for (let dir = await $.session.root(); dir !== ''; dir = dir.replace(/[\\/][^\\/]*$/, '')) {
+      if (await $.fs.exists(`${dir}/${NF_CORE_CONFIG}`)) {
+        return true
+      }
+    }
+  } catch {
+    // An unreadable folder counts as no nf-core repo.
+  }
+
+  return false
+}
+
 export const register: Register = on => {
   on('prompt.submit', async ($, e, next) => {
-    if (TRIGGER.test(e.text) && !(await read($, isActive))) {
+    if (!(await read($, isActive)) && (TRIGGER.test(e.text) || (await isInNfCoreRepo($)))) {
       await update($, isActive, () => true)
     }
     await update($, motionIndex, i => (i + 1) % MOTIONS.length)
